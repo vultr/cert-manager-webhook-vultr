@@ -1,0 +1,6 @@
+{
+  "apiKeySecretRef": {
+    "name": "vultr-credentials",
+    "key": "apiKey"
+  }
+}

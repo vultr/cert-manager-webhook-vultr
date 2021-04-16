@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vultr-credentials
+type: Opaque
+data:
+  apiKey: "<Add your Base64 encoded Vultr API Key here.>"
