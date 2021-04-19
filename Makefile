@@ -26,10 +26,25 @@ clean: clean-kubebuilder
 clean-kubebuilder:
 	rm -Rf _test/kubebuilder
 
-build:
-	docker build -t "$(IMAGE_NAME):$(IMAGE_TAG)" .
 
+.PHONY: deploy
+deploy: docker-build docker-push
+
+#.PHONY: build-linux
+#build-linux:
+#	@echo "building vultr csi for linux"
+#	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-X main.version=$(VERSION)' -o cert-manager-webhook-vultr ./cmd/csi-vultr-driver
+
+.PHONY: docker-build
+docker-build:
+	@echo "building docker image to dockerhub $(REGISTRY) with version $(VERSION)"
+	docker build . -t $(REGISTRY)/cert-manager-webhook-vultr:$(VERSION)
+
+.PHONY: docker-push
+docker-push:
+	docker push $(REGISTRY)/cert-manager-webhook-vultr:$(VERSION)
 .PHONY: rendered-manifest.yaml
+
 rendered-manifest.yaml:
 	helm template \
 	    --name cert-manager-webhook-vultr \

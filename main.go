@@ -21,6 +21,7 @@ import (
 )
 
 var GroupName = os.Getenv("GROUP_NAME")
+const version = "v0.1.0"
 
 func main() {
 	if GroupName == "" {
@@ -176,7 +177,8 @@ func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrPro
 	ctx := context.Background()
 	ts := config.TokenSource(ctx, &oauth2.Token{AccessToken: string(keyBytes)})
 	v.vultrClient = govultr.NewClient(oauth2.NewClient(ctx, ts))
-
+	v.vultrClient.SetUserAgent(fmt.Sprintf("cert-manager-webhook-vultr/%s", version))
+	
 	return nil
 }
 

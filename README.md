@@ -1,54 +1,135 @@
-# ACME webhook example
+# Vultr Webhook for Cert Manager
 
-The ACME issuer type supports an optional 'webhook' solver, which can be used
-to implement custom DNS01 challenge solving logic.
+This is a webhook solver for [Vultr](https://www.vultr.com) to be used with [Cert-Manager](https://cert-manager.io/docs/)
 
-This is useful if you need to use cert-manager with a DNS provider that is not
-officially supported in cert-manager core.
+## Prerequisites
 
-## Why not in core?
+There are a few things required before you can start using `cert-manager-webhook-vultr`.
 
-As the project & adoption has grown, there has been an influx of DNS provider
-pull requests to our core codebase. As this number has grown, the test matrix
-has become un-maintainable and so, it's not possible for us to certify that
-providers work to a sufficient level.
+- Helm v3+ is required to install the `cert-manager-webhook-vultr` charts
+- [Cert-Manager](https://cert-manager.io/docs/) needs to be running on your cluster prior.
 
-By creating this 'interface' between cert-manager and DNS providers, we allow
-users to quickly iterate and test out new integrations, and then packaging
-those up themselves as 'extensions' to cert-manager.
+## Installation
 
-We can also then provide a standardised 'testing framework', or set of
-conformance tests, which allow us to validate the a DNS provider works as
-expected.
+### Installing the webhook
 
-## Creating your own webhook
+First, you will need to deploy a secret with your api key. 
+You can do this by using the sample yaml in `testdata/vultr/api-key.yaml.sample` or by running the following kubectl command: 
 
-Webhook's themselves are deployed as Kubernetes API services, in order to allow
-administrators to restrict access to webhooks with Kubernetes RBAC.
+```shell
+kubectl create secret generic "vultr-credentials" --from-literal=apiKey=<VULTR API KEY> --namespace=cert-manager
+```
 
-This is important, as otherwise it'd be possible for anyone with access to your
-webhook to complete ACME challenge validations and obtain certificates.
+Second, you will need to deploy the `cert-manager-webhook-vultr`. We have a helm chart that makes installation of this fairly straightforward. 
 
-To make the set up of these webhook's easier, we provide a template repository
-that can be used to get started quickly.
+```shell
+helm install --namespace cert-manager cert-manager-webhook-vultr ./deploy/cert-manager-webhook-vultr
+```
 
-### Creating your own repository
+This will deploy all necessary services, deployments, rbac, and various other resources required for cert-manager.
+
+To uninstall the webhook run the following:
+
+```shell
+helm uninstall cert-manager-webhook-vultr --namespace=cert-manager
+```
+
+### Deploying a ClusterIssuer
+
+Below we will deploy a ClusterIssuer which will use LetsEncrypt staging environment 
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: <enter your email address>
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: letsencrypt-staging
+    solvers:
+    - dns01:
+        webhook:
+          groupName: acme.vultr.com
+          solverName: vultr
+          config:
+            apiKeySecretRef:
+              key: apiKey
+              name: vultr-credentials
+```
+
+We also need to grant permissions for the `service account` to be able to grab the secret .
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cert-manager-webhook-vultr:secret-reader
+  namespace: cert-manager
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["vultr-credentials"]
+  verbs: ["get", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cert-manager-webhook-vultr:secret-reader
+  namespace: cert-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cert-manager-webhook-vultr:secret-reader
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: cert-manager-webhook-vultr
+```
+
+### Request a certificate
+
+The Certificate resource represents a human readable definition of a certificate request that is to be honored by an issuer which is to be kept up-to-date.
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: staging-cert-example-com
+spec:
+  commonName: example.com # REPLACE THIS WITH YOUR DOMAIN
+  dnsNames:
+  - example.com # REPLACE THIS WITH YOUR DOMAIN
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+  secretName: example-com-tls
+```
+
+To check on the certificate run the following:
+
+```shell
+kubectl describe certificate staging-cert-example-com
+```
+
+To delete a certificate run the following:
+
+```shell
+kubectl delete certificate staging-cert-example-com
+```
+
+## Troubleshooting
+Cert-Manager has a great page that describes how to [troubleshoot](https://cert-manager.io/docs/faq/troubleshooting/).
 
 ### Running the test suite
-
-All DNS providers **must** run the DNS01 provider conformance testing suite,
-else they will have undetermined behaviour when used with cert-manager.
-
-**It is essential that you configure and run the test suite when creating a
-DNS01 webhook.**
-
-An example Go test file has been provided in [main_test.go](https://github.com/jetstack/cert-manager-webhook-example/blob/master/main_test.go).
 
 You can run the test suite with:
 
 ```bash
 $ TEST_ZONE_NAME=example.com. make test
 ```
-
-The example file has a number of areas you must fill in and replace with your
-own options in order for tests to pass.
