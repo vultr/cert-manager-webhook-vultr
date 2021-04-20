@@ -29,6 +29,10 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: docker-deploy-tag
+        run: REGISTRY=vultr VERSION=${{ steps.get_version.outputs.VERSION }} make deploy
+      - name: docker-deploy-release
+        run: REGISTRY=vultr VERSION=release make deploy
   release-notify:
     runs-on: ubuntu-latest
     name: Release Notification

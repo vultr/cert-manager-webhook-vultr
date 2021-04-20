@@ -56,12 +56,6 @@ changelog:
       - '^testdata:'
       - '^deploy:'
 
-dockers:
-  - dockerfile: Dockerfile
-    image_templates:
-      - "vultr/cert-manager-webhook-vultr:release"
-      - "vultr/cert-manager-webhook-vultr:{{ .Tag }}"
-
 release:
   draft: true
   github:

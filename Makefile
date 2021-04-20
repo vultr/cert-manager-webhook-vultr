@@ -28,12 +28,12 @@ clean-kubebuilder:
 
 
 .PHONY: deploy
-deploy: docker-build docker-push
+deploy: build-linux docker-build docker-push
 
-#.PHONY: build-linux
-#build-linux:
-#	@echo "building vultr csi for linux"
-#	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-X main.version=$(VERSION)' -o cert-manager-webhook-vultr ./cmd/csi-vultr-driver
+.PHONY: build-linux
+build-linux:
+	@echo "building vultr csi for linux"
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags '-X main.version=$(VERSION)' -o cert-manager-webhook-vultr .
 
 .PHONY: docker-build
 docker-build:
@@ -43,8 +43,8 @@ docker-build:
 .PHONY: docker-push
 docker-push:
 	docker push $(REGISTRY)/cert-manager-webhook-vultr:$(VERSION)
-.PHONY: rendered-manifest.yaml
 
+.PHONY: rendered-manifest.yaml
 rendered-manifest.yaml:
 	helm template \
 	    --name cert-manager-webhook-vultr \
