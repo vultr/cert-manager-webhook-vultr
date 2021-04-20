@@ -66,6 +66,8 @@ dockers:
       - "vultr/cert-manager-webhook-vultr:{{ .Tag }}"
 
 release:
+  draft: true
   github:
     owner: vultr
     name: cert-manager-webhook-vultr
+

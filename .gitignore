@@ -20,3 +20,4 @@ _test
 .idea
 
 testdata/vultr/api-key.yaml
+/dist
