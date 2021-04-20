@@ -14,7 +14,7 @@ certManager:
 
 image:
   repository: vultr/cert-manager-webhook-vultr
-  tag: latest
+  tag: v0.1.0
   pullPolicy: IfNotPresent
 
 nameOverride: ""
