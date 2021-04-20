@@ -1,0 +1,71 @@
+before:
+  hooks:
+    - go mod download
+    - go generate ./...
+builds:
+  -
+    env:
+      - CGO_ENABLED=0
+
+    binary: cert-manager-webhook-vultr
+
+    asmflags:
+      - -D mysymbol
+      - all=-trimpath={{.Env.GOPATH}}
+
+    gcflags:
+      - all=-trimpath={{.Env.GOPATH}}
+      - ./dontoptimizeme=-N
+
+    goos:
+      - linux
+      - windows
+      - darwin
+
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  -
+    replacements:
+      darwin: macOs
+      linux: linux
+      windows: windows
+      amd64: 64-bit
+      arm64: arm64-bit
+
+    format: tar.gz
+
+    files:
+      - none*
+
+    format_overrides:
+      - goos: windows
+        format: zip
+
+
+checksum:
+  name_template: "{{ .ProjectName }}_v{{ .Version }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ .ProjectName }}_v{{ .Version }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^testdata:'
+      - '^deploy:'
+
+dockers:
+  - dockerfile: Dockerfile
+    image_templates:
+      - "vultr/cert-manager-webhook-vultr:release"
+      - "vultr/cert-manager-webhook-vultr:{{ .Tag }}"
+
+release:
+  github:
+    owner: vultr
+    name: cert-manager-webhook-vultr

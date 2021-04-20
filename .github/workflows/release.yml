@@ -1,0 +1,37 @@
+name: notify-release
+
+on:
+  push:
+    tags: v*
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Unshallow
+        run: git fetch --prune --unshallow
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
+        with:
+          version: latest
+          args: release --rm-dist
+  release-notify:
+    runs-on: ubuntu-latest
+    name: Release Notification
+    steps:
+      - name: Get the version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+      - run: |
+          echo "{\"text\":\"Cert-manager-webhook-vultr : Release https://github.com/vultr/cert-manager-webhook-vultr/releases/tag/${{ steps.get_version.outputs.VERSION }} \"}" > mattermost.json
+      - uses: mattermost/action-mattermost-notify@master
+        env:
+          MATTERMOST_WEBHOOK_URL: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
+          MATTERMOST_USERNAME: ${{ secrets.MATTERMOST_USERNAME}}
+          MATTERMOST_ICON: ${{ secrets.MATTERMOST_ICON }}

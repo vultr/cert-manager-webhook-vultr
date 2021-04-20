@@ -20,7 +20,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// GroupName ...
 var GroupName = os.Getenv("GROUP_NAME")
+
 const version = "v0.1.0"
 
 func main() {
@@ -178,7 +180,7 @@ func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrPro
 	ts := config.TokenSource(ctx, &oauth2.Token{AccessToken: string(keyBytes)})
 	v.vultrClient = govultr.NewClient(oauth2.NewClient(ctx, ts))
 	v.vultrClient.SetUserAgent(fmt.Sprintf("cert-manager-webhook-vultr/%s", version))
-	
+
 	return nil
 }
 
@@ -188,8 +190,7 @@ func (v *VultrSolver) getRecords(ch *v1alpha1.ChallengeRequest) ([]govultr.Domai
 		return nil, err
 	}
 
-
-	test :=  util.UnFqdn(zone)
+	test := util.UnFqdn(zone)
 	fmt.Println(test)
 	var records []govultr.DomainRecord
 	//todo fill in the list options + meta
