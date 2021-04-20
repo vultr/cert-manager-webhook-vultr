@@ -9,13 +9,10 @@ builds:
 
     binary: cert-manager-webhook-vultr
 
-    asmflags:
-      - -D mysymbol
-      - all=-trimpath={{.Env.GOPATH}}
-
-    gcflags:
-      - all=-trimpath={{.Env.GOPATH}}
-      - ./dontoptimizeme=-N
+    flags:
+      - -trimpath #removes all file system paths from the compiled executable
+    ldflags:
+      - '-s -w -X main.version={{.Version}} -X main.VersionPrerelease= '
 
     goos:
       - linux
