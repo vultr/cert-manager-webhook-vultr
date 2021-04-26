@@ -13,7 +13,7 @@ FROM build_deps AS build
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -o webhook -ldflags '-w -extldflags "-static"' .
+RUN CGO_ENABLED=0 go build -trimpath -o webhook -ldflags '-w -extldflags "-static"' .
 
 FROM alpine:3.9
 
