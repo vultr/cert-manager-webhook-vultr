@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	version     = "2.4.0"
+	version     = "2.12.0"
 	defaultBase = "https://api.vultr.com"
 	userAgent   = "govultr/" + version
 	rateLimit   = 500 * time.Millisecond
@@ -48,6 +48,7 @@ type Client struct {
 	Application     ApplicationService
 	Backup          BackupService
 	BareMetalServer BareMetalServerService
+	Billing         BillingService
 	BlockStorage    BlockStorageService
 	Domain          DomainService
 	DomainRecord    DomainRecordService
@@ -55,6 +56,7 @@ type Client struct {
 	FirewallRule    FireWallRuleService
 	Instance        InstanceService
 	ISO             ISOService
+	Kubernetes      KubernetesService
 	LoadBalancer    LoadBalancerService
 	Network         NetworkService
 	ObjectStorage   ObjectStorageService
@@ -99,6 +101,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.Application = &ApplicationServiceHandler{client}
 	client.Backup = &BackupServiceHandler{client}
 	client.BareMetalServer = &BareMetalServerServiceHandler{client}
+	client.Billing = &BillingServiceHandler{client}
 	client.BlockStorage = &BlockStorageServiceHandler{client}
 	client.Domain = &DomainServiceHandler{client}
 	client.DomainRecord = &DomainRecordsServiceHandler{client}
@@ -106,6 +109,7 @@ func NewClient(httpClient *http.Client) *Client {
 	client.FirewallRule = &FireWallRuleServiceHandler{client}
 	client.Instance = &InstanceServiceHandler{client}
 	client.ISO = &ISOServiceHandler{client}
+	client.Kubernetes = &KubernetesHandler{client}
 	client.LoadBalancer = &LoadBalancerHandler{client}
 	client.Network = &NetworkServiceHandler{client}
 	client.ObjectStorage = &ObjectStorageServiceHandler{client}
@@ -235,6 +239,15 @@ func (c *Client) vultrErrorHandler(resp *http.Response, err error, numTries int)
 
 // BoolToBoolPtr helper function that returns a pointer from your bool value
 func BoolToBoolPtr(value bool) *bool {
-	b := value
-	return &b
+	return &value
+}
+
+// StringToStringPtr helper function that returns a pointer from your string value
+func StringToStringPtr(value string) *string {
+	return &value
+}
+
+// IntToIntPtr helper function that returns a pointer from your string value
+func IntToIntPtr(value int) *int {
+	return &value
 }
