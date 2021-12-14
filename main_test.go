@@ -16,8 +16,6 @@ func TestRunsSuite(t *testing.T) {
 		dns.SetResolvedZone(zone),
 		dns.SetAllowAmbientCredentials(false),
 		dns.SetManifestPath("testdata/vultr"),
-		dns.SetBinariesPath("_test/kubebuilder/bin"),
-		dns.SetResolvedZone("freightapp.co."),
 	)
 	fixture.RunConformance(t)
 }

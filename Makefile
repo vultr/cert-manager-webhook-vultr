@@ -5,26 +5,24 @@ IMAGE_NAME := "webhook"
 IMAGE_TAG := "latest"
 
 OUT := $(shell pwd)/_out
-
-KUBEBUILDER_VERSION=2.3.2
+TEST_ASSET_ETCD := $(OUT)/kubebuilder/bin/etcd
+TEST_ASSET_KUBE_APISERVER := $(OUT)/kubebuilder/bin/kube-apiserver
+TEST_ASSET_KUBECTL := $(OUT)/kubebuilder/bin/kubectl
 
 $(shell mkdir -p "$(OUT)")
 
 test: _test/kubebuilder
+	TEST_ASSET_ETCD="$(TEST_ASSET_ETCD)" TEST_ASSET_KUBE_APISERVER="$(TEST_ASSET_KUBE_APISERVER)" TEST_ASSET_KUBECTL="$(TEST_ASSET_KUBECTL)" \
 	go test -v .
 
 _test/kubebuilder:
-	curl -fsSL https://github.com/kubernetes-sigs/kubebuilder/releases/download/v$(KUBEBUILDER_VERSION)/kubebuilder_$(KUBEBUILDER_VERSION)_$(OS)_$(ARCH).tar.gz -o kubebuilder-tools.tar.gz
-	mkdir -p _test/kubebuilder
-	tar -xvf kubebuilder-tools.tar.gz
-	mv kubebuilder_$(KUBEBUILDER_VERSION)_$(OS)_$(ARCH)/bin _test/kubebuilder/
-	rm kubebuilder-tools.tar.gz
-	rm -R kubebuilder_$(KUBEBUILDER_VERSION)_$(OS)_$(ARCH)
+	sh ./scripts/fetch-test-binaries.sh
 
 clean: clean-kubebuilder
 
 clean-kubebuilder:
-	rm -Rf _test/kubebuilder
+	rm -Rf _out/kubebuilder
+
 
 
 .PHONY: deploy
