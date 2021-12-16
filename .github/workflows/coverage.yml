@@ -22,7 +22,6 @@ jobs:
           kind: Secret
           metadata:
             name: vultr-credentials
-            namespace: cert-manager
           type: Opaque
           data:
             apiKey: "${KEY}"
@@ -31,8 +30,7 @@ jobs:
       - name: Run unit tests and coverage test
         id: test-coverage
         run: |
-          TEST_ZONE_NAME=vultr-k8-cm.tk. 
-          make test > output.txt
+          TEST_ZONE_NAME=vultr-k8-cm.tk. make test > output.txt
 
       - name: Transform output
         id: results
