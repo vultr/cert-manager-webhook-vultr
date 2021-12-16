@@ -16,7 +16,7 @@ test: _test/kubebuilder
 	go test -v .
 
 _test/kubebuilder:
-	sh ./scripts/fetch-test-binaries.sh
+	bash scripts/fetch-test-binaries.sh
 
 clean: clean-kubebuilder
 

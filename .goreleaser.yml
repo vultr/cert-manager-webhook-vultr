@@ -56,6 +56,13 @@ changelog:
       - '^testdata:'
       - '^deploy:'
 
+dockers:
+  - dockerfile: Dockerfile.goreleaser
+    image_templates:
+      - "vultr/cert-manager-webhook-vultr:release"
+      - "vultr/cert-manager-webhook-vultr:{{ .Tag }}"
+
+
 release:
   draft: true
   github:
