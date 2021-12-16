@@ -37,7 +37,7 @@ jobs:
         id: results
         if: always()
         run: |
-          CONTENT=$(cat output.txt)
+          CONTENT=$(tail output.txt)
           CONTENT="${CONTENT//'%'/'%25'}"
           CONTENT="${CONTENT//$'\n'/'%0A'}"
           CONTENT="${CONTENT//$'\r'/'%0D'}"
