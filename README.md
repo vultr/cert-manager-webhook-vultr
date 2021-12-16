@@ -1,7 +1,7 @@
 # Vultr Webhook for Cert Manager
 
 This is a webhook solver for [Vultr](https://www.vultr.com) to be used with [Cert-Manager](https://cert-manager.io/docs/)
-
+.
 ## Prerequisites
 
 There are a few things required before you can start using `cert-manager-webhook-vultr`.
