@@ -39,7 +39,8 @@ var (
 )
 
 const (
-	// following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
+	// Following analog to https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md
+
 	ErrorLevel        = 0
 	WarnLevel         = 1
 	InfoLevel         = 2
@@ -138,34 +139,31 @@ func WithRelatedResourceName(l logr.Logger, name, namespace, kind string) logr.L
 var contextKey = &struct{}{}
 
 func FromContext(ctx context.Context, names ...string) logr.Logger {
-	l := ctx.Value(contextKey)
-	if l == nil {
-		return Log
-	}
-	lT := l.(logr.Logger)
-	for _, n := range names {
-		lT = lT.WithName(n)
-	}
-	return lT
-}
-
-func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	if l == nil {
-		l = FromContext(ctx)
+	l, err := logr.FromContext(ctx)
+	if err != nil {
+		l = Log
 	}
 	for _, n := range names {
 		l = l.WithName(n)
 	}
-	return context.WithValue(ctx, contextKey, l)
+	return l
+}
+
+func NewContext(ctx context.Context, l logr.Logger, names ...string) context.Context {
+	for _, n := range names {
+		l = l.WithName(n)
+	}
+	return logr.NewContext(ctx, l)
 }
 
 func V(level int) klog.Verbose {
 	return klog.V(klog.Level(level))
 }
 
+// LogWithFormat is a wrapper for logger that adds Infof method to log messages
+// with the given format and arguments.
+//
+// Used as a patch to the controller eventBroadcaster for sending non-string objects.
 type LogWithFormat struct {
 	logr.Logger
 }
@@ -174,7 +172,7 @@ func WithInfof(l logr.Logger) *LogWithFormat {
 	return &LogWithFormat{l}
 }
 
-// is a patch to the controller eventBroadcaster for sending non-string objects
+// Infof logs message with the given format and arguments.
 func (l *LogWithFormat) Infof(format string, a ...interface{}) {
 	l.Info(fmt.Sprintf(format, a...))
 }

@@ -138,10 +138,11 @@ type CertificateSpec struct {
 	// denoted issuer.
 	SecretName string `json:"secretName"`
 
-	// SecretTemplate defines annotations and labels to be propagated
-	// to the Kubernetes Secret when it is created or updated. Once created,
-	// labels and annotations are not yet removed from the Secret when they are
-	// removed from the template. See https://github.com/jetstack/cert-manager/issues/4292
+	// SecretTemplate defines annotations and labels to be copied to the
+	// Certificate's Secret. Labels and annotations on the Secret will be changed
+	// as they appear on the SecretTemplate when added or removed. SecretTemplate
+	// annotations are added in conjunction with, and cannot overwrite, the base
+	// set of annotations cert-manager sets on the Certificate's Secret.
 	// +optional
 	SecretTemplate *CertificateSecretTemplate `json:"secretTemplate,omitempty"`
 
@@ -187,6 +188,14 @@ type CertificateSpec struct {
 	// +kubebuilder:validation:ExclusiveMaximum=false
 	// +optional
 	RevisionHistoryLimit *int32 `json:"revisionHistoryLimit,omitempty"` // Validated by the validating webhook.
+
+	// AdditionalOutputFormats defines extra output formats of the private key
+	// and signed certificate chain to be written to this Certificate's target
+	// Secret. This is an Alpha Feature and is only enabled with the
+	// `--feature-gates=AdditionalCertificateOutputFormats=true` option on both
+	// the controller and webhook components.
+	// +optional
+	AdditionalOutputFormats []CertificateAdditionalOutputFormat `json:"additionalOutputFormats,omitempty"`
 }
 
 // CertificatePrivateKey contains configuration options for private keys
@@ -248,6 +257,48 @@ var (
 	// requirements will be generated whenever a re-issuance occurs.
 	RotationPolicyAlways PrivateKeyRotationPolicy = "Always"
 )
+
+// CertificateOutputFormatType specifies which additional output formats should
+// be written to the Certificate's target Secret.
+// Allowed values are `DER` or `CombinedPEM`.
+// When Type is set to `DER` an additional entry `key.der` will be written to
+// the Secret, containing the binary format of the private key.
+// When Type is set to `CombinedPEM` an additional entry `tls-combined.pem`
+// will be written to the Secret, containing the PEM formatted private key and
+// signed certificate chain (tls.key + tls.crt concatenated).
+// +kubebuilder:validation:Enum=DER;CombinedPEM
+type CertificateOutputFormatType string
+
+const (
+	// CertificateOutputFormatDERKey is the name of the data entry in the Secret
+	// resource used to store the DER formatted private key.
+	CertificateOutputFormatDERKey string = "key.der"
+
+	// CertificateOutputFormatDER  writes the Certificate's private key in DER
+	// binary format to the `key.der` target Secret Data key.
+	CertificateOutputFormatDER CertificateOutputFormatType = "DER"
+
+	// CertificateOutputFormatCombinedPEMKey is the name of the data entry in the Secret
+	// resource used to store the combined PEM (key + signed certificate).
+	CertificateOutputFormatCombinedPEMKey string = "tls-combined.pem"
+
+	// CertificateOutputFormatCombinedPEM  writes the Certificate's signed
+	// certificate chain and private key, in PEM format, to the
+	// `tls-combined.pem` target Secret Data key. The value at this key will
+	// include the private key PEM document, followed by at least one new line
+	// character, followed by the chain of signed certificate PEM documents
+	// (`<private key> + \n + <signed certificate chain>`).
+	CertificateOutputFormatCombinedPEM CertificateOutputFormatType = "CombinedPEM"
+)
+
+// CertificateAdditionalOutputFormat defines an additional output format of a
+// Certificate resource. These contain supplementary data formats of the signed
+// certificate chain and paired private key.
+type CertificateAdditionalOutputFormat struct {
+	// Type is the name of the format type that should be written to the
+	// Certificate's target Secret.
+	Type CertificateOutputFormatType `json:"type"`
+}
 
 // X509Subject Full X509 name specification
 type X509Subject struct {
