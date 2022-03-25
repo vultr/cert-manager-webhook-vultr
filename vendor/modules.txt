@@ -115,7 +115,7 @@ github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
 ## explicit
 github.com/inconshreveable/mousetrap
-# github.com/jetstack/cert-manager v1.7.1
+# github.com/jetstack/cert-manager v1.7.2
 ## explicit; go 1.17
 github.com/jetstack/cert-manager/cmd/util
 github.com/jetstack/cert-manager/internal/apis/acme
