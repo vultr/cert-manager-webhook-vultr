@@ -17,7 +17,7 @@ First, you will need to deploy a secret with your api key.
 You can do this by using the sample yaml in `testdata/vultr/api-key.yaml.sample` or by running the following kubectl command: 
 
 ```shell
-kubectl create secret generic "vultr-credentials" --from-literal=apiKey=<VULTR API KEY> --namespace=cert-manager
+kubectl create secret generic "vultr-credentials" --from-literal=apiKey="<VULTR API KEY>" --namespace=cert-manager
 ```
 
 Second, you will need to deploy the `cert-manager-webhook-vultr`. We have a helm chart that makes installation of this fairly straightforward. 
