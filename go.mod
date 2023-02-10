@@ -7,7 +7,7 @@ require (
 	github.com/vultr/govultr/v2 v2.16.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 	k8s.io/apiextensions-apiserver v0.25.2
-	k8s.io/apimachinery v0.25.6
+	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v0.25.6
 )
 
@@ -99,8 +99,8 @@ require (
 	k8s.io/component-base v0.25.6 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-aggregator v0.25.2 // indirect
-	k8s.io/kube-openapi v0.0.0-20220803164354-a70c9af30aea // indirect
-	k8s.io/utils v0.0.0-20220922133306-665eaaec4324 // indirect
+	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
+	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d // indirect
 	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.35 // indirect
 	sigs.k8s.io/controller-runtime v0.13.0 // indirect
 	sigs.k8s.io/gateway-api v0.5.0 // indirect
