@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/cert-manager/cert-manager v1.10.1
 	github.com/vultr/govultr/v2 v2.16.0
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
+	golang.org/x/oauth2 v0.8.0
 	k8s.io/apiextensions-apiserver v0.25.2
 	k8s.io/apimachinery v0.25.6
 	k8s.io/client-go v0.25.6
@@ -79,7 +79,7 @@ require (
 	go.uber.org/zap v1.21.0 // indirect
 	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7 // indirect
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
-	golang.org/x/net v0.4.0 // indirect
+	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sync v0.0.0-20220923202941-7f9b1623fab7 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
