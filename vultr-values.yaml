@@ -1,6 +1,0 @@
-certManager:
-  namespace: cert-manager
-  serviceAccountName: atl-cert-manager
-
-groupName: acme.vultr.com
-
