@@ -1,5 +1,9 @@
 apiVersion: v1
 appVersion: "0.3.1"
-description: A Helm chart for Kubernetes
+type: application
+home: https://github.com/vultr/cert-manager-webhook-vultr
+sources:
+  - https://github.com/vultr/cert-manager-webhook-vultr
+description: A Helm chart for the Vultr Cert-Manager webhook
 name: cert-manager-webhook-vultr
-version: 0.3.1
+version: 0.4.0
