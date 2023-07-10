@@ -7,10 +7,12 @@
 # This group name should be **unique**, hence using your own company's domain
 # here is recommended.
 groupName: acme.vultr.com
+secretName: vultr-credentials
 
 certManager:
   namespace: cert-manager
   serviceAccountName: cert-manager
+  email: changeme@email.com
 
 image:
   repository: vultr/cert-manager-webhook-vultr

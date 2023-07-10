@@ -1,0 +1,39 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vultr-letsencrypt-staging
+spec:
+  acme:
+    email: {{ .Values.certManager.email }}
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: vultr-letsencrypt-staging
+    solvers:
+      - dns01:
+          webhook:
+            groupName: acme.vultr.com
+            solverName: vultr
+            config:
+              apiKeySecretRef:
+                key: apiKey
+                name: {{ .Values.secretName }}
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: vultr-letsencrypt-prod
+spec:
+  acme:
+    email: {{ .Values.certManager.email }}
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: vultr-letsencrypt-prod
+    solvers:
+      - dns01:
+          webhook:
+            groupName: acme.vultr.com
+            solverName: vultr
+            config:
+              apiKeySecretRef:
+                key: apiKey
+                name: {{ .Values.secretName }}
