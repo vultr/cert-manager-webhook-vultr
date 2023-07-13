@@ -6,4 +6,4 @@ sources:
   - https://github.com/vultr/cert-manager-webhook-vultr
 description: A Helm chart for the Vultr Cert-Manager webhook
 name: cert-manager-webhook-vultr
-version: 0.4.0
+version: 0.4.1

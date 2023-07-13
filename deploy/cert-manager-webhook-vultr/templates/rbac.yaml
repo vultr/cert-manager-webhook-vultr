@@ -150,4 +150,4 @@ roleRef:
 subjects:
   - apiGroup: ""
     kind: ServiceAccount
-    name: {{ .Values.certManager.serviceAccountName }}
+    name: {{ include "cert-manager-webhook-vultr.fullname" . }}
