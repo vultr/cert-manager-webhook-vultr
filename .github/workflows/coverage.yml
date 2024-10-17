@@ -47,7 +47,7 @@ jobs:
         if: always()
         with:
           script: |
-            const output = `### Unit Tests and Coverage
+            const output = `### Unit Tests and Coverage Results
             <details><summary>Show Output</summary>
 
             \`\`\`
