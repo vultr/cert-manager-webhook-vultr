@@ -11,7 +11,7 @@ import (
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
 	cmMeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/cert-manager/cert-manager/pkg/issuer/acme/dns/util"
-	"github.com/vultr/govultr/v2"
+	"github.com/vultr/govultr/v3"
 	"golang.org/x/oauth2"
 
 	extapi "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -70,7 +70,7 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		}
 	}
 
-	zoneName, err := util.FindZoneByFqdn(ch.ResolvedFQDN, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
 		return nil
 	}
@@ -93,7 +93,7 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		TTL:  60,
 	}
 
-	_, err = v.vultrClient.DomainRecord.Create(context.Background(), util.UnFqdn(zoneName), req)
+	_, _, err = v.vultrClient.DomainRecord.Create(context.Background(), util.UnFqdn(zoneName), req)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func (v *VultrSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		}
 	}
 
-	zoneName, err := util.FindZoneByFqdn(ch.ResolvedFQDN, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
 		return nil
 	}
@@ -185,7 +185,7 @@ func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrPro
 }
 
 func (v *VultrSolver) getRecords(ch *v1alpha1.ChallengeRequest) ([]govultr.DomainRecord, error) {
-	zone, err := util.FindZoneByFqdn(ch.ResolvedFQDN, util.RecursiveNameservers)
+	zone, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (v *VultrSolver) getRecords(ch *v1alpha1.ChallengeRequest) ([]govultr.Domai
 	fmt.Println(test)
 	var records []govultr.DomainRecord
 	//todo fill in the list options + meta
-	recordsList, _, err := v.vultrClient.DomainRecord.List(context.Background(), test, nil)
+	recordsList, _, _, err := v.vultrClient.DomainRecord.List(context.Background(), test, nil)
 	if err != nil {
 		return nil, err
 	}

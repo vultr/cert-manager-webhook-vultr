@@ -17,66 +17,66 @@ limitations under the License.
 package server
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"net"
 
 	"github.com/spf13/cobra"
-
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	genericoptions "k8s.io/apiserver/pkg/server/options"
+	"k8s.io/component-base/logs"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apiserver"
+	logf "github.com/cert-manager/cert-manager/pkg/logs"
 )
 
-const defaultEtcdPathPrefix = "/registry/acme.cert-manager.io"
-
 type WebhookServerOptions struct {
+	Logging *logs.Options
+
 	RecommendedOptions *genericoptions.RecommendedOptions
 
 	SolverGroup string
 	Solvers     []webhook.Solver
-
-	StdOut io.Writer
-	StdErr io.Writer
 }
 
-func NewWebhookServerOptions(out, errOut io.Writer, groupName string, solvers ...webhook.Solver) *WebhookServerOptions {
+func NewWebhookServerOptions(groupName string, solvers ...webhook.Solver) *WebhookServerOptions {
 	o := &WebhookServerOptions{
-		// TODO we will nil out the etcd storage options.  This requires a later level of k8s.io/apiserver
+		Logging: logs.NewOptions(),
+
 		RecommendedOptions: genericoptions.NewRecommendedOptions(
-			defaultEtcdPathPrefix,
+			"<UNUSED>",
 			apiserver.Codecs.LegacyCodec(whapi.SchemeGroupVersion),
 		),
 
 		SolverGroup: groupName,
 		Solvers:     solvers,
-
-		StdOut: out,
-		StdErr: errOut,
 	}
 	o.RecommendedOptions.Etcd = nil
 	o.RecommendedOptions.Admission = nil
+	o.RecommendedOptions.Features.EnablePriorityAndFairness = false
 
 	return o
 }
 
-func NewCommandStartWebhookServer(out, errOut io.Writer, stopCh <-chan struct{}, groupName string, solvers ...webhook.Solver) *cobra.Command {
-	o := NewWebhookServerOptions(out, errOut, groupName, solvers...)
+func NewCommandStartWebhookServer(_ context.Context, groupName string, solvers ...webhook.Solver) *cobra.Command {
+	o := NewWebhookServerOptions(groupName, solvers...)
 
 	cmd := &cobra.Command{
 		Short: "Launch an ACME solver API server",
 		Long:  "Launch an ACME solver API server",
+		// nolint:contextcheck // False positive
 		RunE: func(c *cobra.Command, args []string) error {
+			runCtx := c.Context()
+
 			if err := o.Complete(); err != nil {
 				return err
 			}
 			if err := o.Validate(args); err != nil {
 				return err
 			}
-			if err := o.RunWebhookServer(stopCh); err != nil {
+			if err := o.RunWebhookServer(runCtx); err != nil {
 				return err
 			}
 			return nil
@@ -84,12 +84,21 @@ func NewCommandStartWebhookServer(out, errOut io.Writer, stopCh <-chan struct{},
 	}
 
 	flags := cmd.Flags()
+	logf.AddFlags(o.Logging, flags)
 	o.RecommendedOptions.AddFlags(flags)
 
 	return cmd
 }
 
 func (o WebhookServerOptions) Validate(args []string) error {
+	if err := logf.ValidateAndApply(o.Logging); err != nil {
+		return err
+	}
+
+	if errs := o.RecommendedOptions.Validate(); len(errs) > 0 {
+		return fmt.Errorf("error validating recommended options: %v", errs)
+	}
+
 	return nil
 }
 
@@ -97,6 +106,9 @@ func (o *WebhookServerOptions) Complete() error {
 	return nil
 }
 
+// Config creates a new webhook server config that includes generic upstream
+// apiserver options, rest client config and the Solvers configured for this
+// webhook server
 func (o WebhookServerOptions) Config() (*apiserver.Config, error) {
 	// TODO have a "real" external address
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", nil, []net.IP{net.ParseIP("127.0.0.1")}); err != nil {
@@ -118,7 +130,9 @@ func (o WebhookServerOptions) Config() (*apiserver.Config, error) {
 	return config, nil
 }
 
-func (o WebhookServerOptions) RunWebhookServer(stopCh <-chan struct{}) error {
+// RunWebhookServer creates a new apiserver, registers an API Group for each of
+// the configured solvers and runs the new apiserver.
+func (o WebhookServerOptions) RunWebhookServer(ctx context.Context) error {
 	config, err := o.Config()
 	if err != nil {
 		return err
@@ -128,5 +142,5 @@ func (o WebhookServerOptions) RunWebhookServer(stopCh <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
-	return server.GenericAPIServer.PrepareRun().Run(stopCh)
+	return server.GenericAPIServer.PrepareRun().RunWithContext(ctx)
 }
