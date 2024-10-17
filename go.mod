@@ -1,6 +1,6 @@
 module github.com/vultr/cert-manager-webhook-vultr
 
-go 1.19
+go 1.23
 
 require (
 	github.com/cert-manager/cert-manager v1.10.1
