@@ -24,13 +24,16 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/apimachinery/pkg/version"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apiserver/pkg/endpoints/openapi"
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
+	utilversion "k8s.io/apiserver/pkg/util/version"
 	restclient "k8s.io/client-go/rest"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook"
 	whapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
+	cmopenapi "github.com/cert-manager/cert-manager/pkg/acme/webhook/openapi"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/registry/challengepayload"
 )
 
@@ -40,7 +43,7 @@ var (
 )
 
 func init() {
-	whapi.AddToScheme(Scheme)
+	utilruntime.Must(whapi.AddToScheme(Scheme))
 
 	// we need to add the options to empty v1
 	// TODO fix the server code to avoid this
@@ -54,20 +57,12 @@ func init() {
 		&metav1.APIGroupList{},
 		&metav1.APIGroup{},
 		&metav1.APIResourceList{},
-		&metav1.ListOptions{},
-		&metav1.GetOptions{},
-		&metav1.PatchOptions{},
-		&metav1.DeleteOptions{},
-		&metav1.CreateOptions{},
-		&metav1.UpdateOptions{},
 	)
 }
 
 type Config struct {
 	GenericConfig *genericapiserver.RecommendedConfig
 	ExtraConfig   ExtraConfig
-
-	restConfig *restclient.Config
 }
 
 type ExtraConfig struct {
@@ -98,21 +93,21 @@ type CompletedConfig struct {
 
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
 func (c *Config) Complete() CompletedConfig {
-	completedCfg := completedConfig{
+	c.GenericConfig.EffectiveVersion = utilversion.NewEffectiveVersion("1.1")
+	c.GenericConfig.OpenAPIConfig = genericapiserver.DefaultOpenAPIConfig(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+	c.GenericConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(cmopenapi.GetOpenAPIDefinitions, openapi.NewDefinitionNamer(Scheme))
+
+	return CompletedConfig{&completedConfig{
 		c.GenericConfig.Complete(),
 		&c.ExtraConfig,
-		c.restConfig,
-	}
-
-	completedCfg.GenericConfig.Version = &version.Info{
-		Major: "1",
-		Minor: "1",
-	}
-
-	return CompletedConfig{&completedCfg}
+		c.GenericConfig.ClientConfig,
+	}}
 }
 
-// New returns a new instance of AdmissionServer from the given config.
+// New returns a new instance of apiserver from the given config. Each of the
+// configured solvers will have an API GroupVersion registered with the new
+// apiserver and will have its Initialize function passed as post-start hook
+// with the server.
 func (c completedConfig) New() (*ChallengeServer, error) {
 	genericServer, err := c.GenericConfig.New("challenge-server", genericapiserver.NewEmptyDelegate()) // completion is done in Complete, no need for a second time
 	if err != nil {
@@ -123,47 +118,40 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		GenericAPIServer: genericServer,
 	}
 
-	if c.restConfig == nil {
-		c.restConfig, err = restclient.InClusterConfig()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	// TODO we're going to need a later k8s.io/apiserver so that we can get discovery to list a different group version for
 	// our endpoint which we'll use to back some custom storage which will consume the AdmissionReview type and give back the correct response
 	apiGroupInfo := genericapiserver.APIGroupInfo{
 		VersionedResourcesStorageMap: map[string]map[string]rest.Storage{},
-		// TODO unhardcode this. It was hardcoded before, but we need to re-evaluate
-		OptionsExternalVersion: &schema.GroupVersion{Version: "v1alpha1"},
+		// TODO unhardcode this.  It was hardcoded before, but we need to re-evaluate
+		OptionsExternalVersion: &schema.GroupVersion{Version: "v1"},
 		Scheme:                 Scheme,
 		ParameterCodec:         metav1.ParameterCodec,
 		NegotiatedSerializer:   Codecs,
 	}
 
 	for _, solver := range solversByName(c.ExtraConfig.Solvers...) {
-		challengeHandler := challengepayload.NewREST(solver)
-		v1alpha1storage, ok := apiGroupInfo.VersionedResourcesStorageMap["v1alpha1"]
-		if !ok {
-			v1alpha1storage = map[string]rest.Storage{}
-		}
-
 		gvr := metav1.GroupVersionResource{
 			Group:    c.ExtraConfig.SolverGroup,
 			Version:  "v1alpha1",
 			Resource: solver.Name(),
 		}
 
+		challengeHandler := challengepayload.NewREST(solver)
+
 		apiGroupInfo.PrioritizedVersions = appendUniqueGroupVersion(apiGroupInfo.PrioritizedVersions, schema.GroupVersion{
 			Group:   gvr.Group,
 			Version: gvr.Version,
 		})
 
+		v1alpha1storage, ok := apiGroupInfo.VersionedResourcesStorageMap[gvr.Version]
+		if !ok {
+			v1alpha1storage = map[string]rest.Storage{}
+		}
 		v1alpha1storage[gvr.Resource] = challengeHandler
 		apiGroupInfo.VersionedResourcesStorageMap[gvr.Version] = v1alpha1storage
 	}
 	if err := s.GenericAPIServer.InstallAPIGroup(&apiGroupInfo); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error installing APIGroup for solvers: %w", err)
 	}
 
 	for i := range c.ExtraConfig.Solvers {
@@ -174,7 +162,7 @@ func (c completedConfig) New() (*ChallengeServer, error) {
 		}
 		s.GenericAPIServer.AddPostStartHookOrDie(postStartName,
 			func(context genericapiserver.PostStartHookContext) error {
-				return solver.Initialize(c.restConfig, context.StopCh)
+				return solver.Initialize(c.restConfig, context.Done())
 			},
 		)
 	}

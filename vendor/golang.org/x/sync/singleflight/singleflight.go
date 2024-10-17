@@ -31,6 +31,15 @@ func (p *panicError) Error() string {
 	return fmt.Sprintf("%v\n\n%s", p.value, p.stack)
 }
 
+func (p *panicError) Unwrap() error {
+	err, ok := p.value.(error)
+	if !ok {
+		return nil
+	}
+
+	return err
+}
+
 func newPanicError(v interface{}) error {
 	stack := debug.Stack()
 
@@ -144,9 +153,9 @@ func (g *Group) doCall(c *call, key string, fn func() (interface{}, error)) {
 			c.err = errGoexit
 		}
 
-		c.wg.Done()
 		g.mu.Lock()
 		defer g.mu.Unlock()
+		c.wg.Done()
 		if g.m[key] == c {
 			delete(g.m, key)
 		}
