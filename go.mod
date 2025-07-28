@@ -3,7 +3,7 @@ module github.com/vultr/cert-manager-webhook-vultr
 go 1.24.0
 
 require (
-	github.com/cert-manager/cert-manager v1.16.1
+	github.com/cert-manager/cert-manager v1.16.2
 	github.com/vultr/govultr/v3 v3.10.0
 	golang.org/x/oauth2 v0.23.0
 	k8s.io/apiextensions-apiserver v0.31.1
