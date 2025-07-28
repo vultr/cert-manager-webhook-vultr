@@ -23,7 +23,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 webhook:
-  port: 4443
+  port: 443
 
 service:
   type: ClusterIP
