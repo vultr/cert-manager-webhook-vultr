@@ -5,9 +5,9 @@ IMAGE_NAME := "webhook"
 IMAGE_TAG := "latest"
 
 OUT := $(shell pwd)/_out
-TEST_ASSET_ETCD := $(OUT)/kubebuilder/bin/etcd
-TEST_ASSET_KUBE_APISERVER := $(OUT)/kubebuilder/bin/kube-apiserver
-TEST_ASSET_KUBECTL := $(OUT)/kubebuilder/bin/kubectl
+TEST_ASSET_ETCD:=$(OUT)/kubebuilder/bin/etcd
+TEST_ASSET_KUBE_APISERVER:=$(OUT)/kubebuilder/bin/kube-apiserver
+TEST_ASSET_KUBECTL:=$(OUT)/kubebuilder/bin/kubectl
 
 $(shell mkdir -p "$(OUT)")
 
@@ -30,12 +30,10 @@ deploy: build-linux docker-build docker-push
 
 .PHONY: build-linux
 build-linux:
-	@echo "building vultr csi for linux"
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags '-X main.version=$(VERSION)' -o cert-manager-webhook-vultr .
 
 .PHONY: docker-build
 docker-build:
-	@echo "building docker image to dockerhub $(REGISTRY) with version $(VERSION)"
 	docker build . -t $(REGISTRY)/cert-manager-webhook-vultr:$(VERSION)
 
 .PHONY: docker-push
