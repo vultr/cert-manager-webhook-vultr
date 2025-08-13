@@ -7,7 +7,7 @@ require (
 	github.com/vultr/govultr/v3 v3.10.0
 	golang.org/x/oauth2 v0.28.0
 	k8s.io/apiextensions-apiserver v0.32.0
-	k8s.io/apimachinery v0.33.3
+	k8s.io/apimachinery v0.32.0
 	k8s.io/client-go v0.32.0
 )
 
@@ -41,6 +41,7 @@ require (
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1 // indirect

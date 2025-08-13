@@ -1,5 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors.
+Copyright 2014 Google Inc. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package errors provides detailed error types for api field validation.
-package errors // import "k8s.io/apimachinery/pkg/api/errors"
+// Package fuzz is a library for populating go objects with random values.
+package fuzz
