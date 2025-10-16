@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/apis/acme/v1alpha1"
 	"github.com/cert-manager/cert-manager/pkg/acme/webhook/cmd"
@@ -59,6 +61,9 @@ func (v *VultrSolver) Name() string {
 // Present is responsible for actually presenting the DNS record with the
 // DNS provider.
 func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancel()
+
 	cfg, err := loadConfig(ch.Config)
 	if err != nil {
 		return err
@@ -70,12 +75,12 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		}
 	}
 
-	zoneName, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(ctx, ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	records, err := v.getRecords(ch)
+	records, err := v.getRecords(ctx, ch)
 	if err != nil {
 		return err
 	}
@@ -93,7 +98,7 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		TTL:  60,
 	}
 
-	_, _, err = v.vultrClient.DomainRecord.Create(context.Background(), util.UnFqdn(zoneName), req)
+	_, _, err = v.vultrClient.DomainRecord.Create(ctx, util.UnFqdn(zoneName), req)
 	if err != nil {
 		return err
 	}
@@ -103,6 +108,9 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 
 // CleanUp should delete the relevant TXT record from the DNS provider console.
 func (v *VultrSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Second)
+	defer cancel()
+
 	cfg, err := loadConfig(ch.Config)
 	if err != nil {
 		return err
@@ -114,19 +122,19 @@ func (v *VultrSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		}
 	}
 
-	zoneName, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
+	zoneName, err := util.FindZoneByFqdn(ctx, ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
-		return nil
+		return err
 	}
 
-	records, err := v.getRecords(ch)
+	records, err := v.getRecords(ctx, ch)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
 		if record.Type == "TXT" && record.Data == fmt.Sprintf("\"%s\"", ch.Key) {
-			if err := v.vultrClient.DomainRecord.Delete(context.Background(), util.UnFqdn(zoneName), record.ID); err != nil {
+			if err := v.vultrClient.DomainRecord.Delete(ctx, util.UnFqdn(zoneName), record.ID); err != nil {
 				return err
 			}
 		}
@@ -172,7 +180,7 @@ func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrPro
 
 	keyBytes, ok := secret.Data[ref.Key]
 	if !ok {
-		return fmt.Errorf("no key %s in secret : %s'", ref.Key, ref.Name)
+		return fmt.Errorf("no key %s in secret : %s", ref.Key, ref.Name)
 	}
 
 	config := &oauth2.Config{}
@@ -184,26 +192,34 @@ func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrPro
 	return nil
 }
 
-func (v *VultrSolver) getRecords(ch *v1alpha1.ChallengeRequest) ([]govultr.DomainRecord, error) {
+func (v *VultrSolver) getRecords(ctx context.Context, ch *v1alpha1.ChallengeRequest) ([]govultr.DomainRecord, error) {
 	zone, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
 	if err != nil {
 		return nil, err
 	}
 
 	test := util.UnFqdn(zone)
-	fmt.Println(test)
-	var records []govultr.DomainRecord
-	//todo fill in the list options + meta
-	recordsList, _, _, err := v.vultrClient.DomainRecord.List(context.Background(), test, nil)
-	if err != nil {
-		return nil, err
-	}
+	log.Printf("[DEBUG] Looking up records for domain: %s", test)
 
+	var records []govultr.DomainRecord
 	targetName := v.stripZone(ch.ResolvedFQDN, zone)
-	for _, record := range recordsList {
-		if record.Name == targetName {
-			records = append(records, record)
+	listOptions := &govultr.ListOptions{PerPage: 100}
+	for {
+		recordsList, meta, _, err := v.vultrClient.DomainRecord.List(ctx, test, listOptions)
+		if err != nil {
+			return nil, err
 		}
+
+		for _, record := range recordsList {
+			if record.Name == targetName {
+				records = append(records, record)
+			}
+		}
+		if meta.Links.Next == "" {
+			break
+		}
+
+		listOptions.Cursor = meta.Links.Next
 	}
 
 	return records, err
