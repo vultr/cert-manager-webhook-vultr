@@ -18,6 +18,7 @@ func TestRunsSuite(t *testing.T) {
 		dns.SetAllowAmbientCredentials(false),
 		dns.SetManifestPath("testdata/vultr"),
 		dns.SetDNSName(zone),
+		dns.SetDNSServer("ns1.vultr.com:53"),
 		dns.SetPropagationLimit(time.Minute*20),
 	)
 	fixture.RunConformance(t)
