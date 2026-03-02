@@ -45,7 +45,7 @@ docker-push:
 .PHONY: rendered-manifest.yaml
 rendered-manifest.yaml:
 	helm template \
-	    --name cert-manager-webhook-vultr \
+	    --name-template cert-manager-webhook-vultr \
         --set image.repository=$(IMAGE_NAME) \
         --set image.tag=$(IMAGE_TAG) \
         deploy/cert-manager-webhook-vultr > "$(OUT)/rendered-manifest.yaml"
