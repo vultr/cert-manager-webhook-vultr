@@ -9,8 +9,9 @@ TEST_ASSET_ETCD := $(OUT)/kubebuilder/bin/etcd
 TEST_ASSET_KUBE_APISERVER := $(OUT)/kubebuilder/bin/kube-apiserver
 TEST_ASSET_KUBECTL := $(OUT)/kubebuilder/bin/kubectl
 
+$(shell mkdir -p "$(OUT)")
+
 test: _test/kubebuilder
-	$(shell mkdir -p "$(OUT)") \
 	TEST_ASSET_ETCD="$(TEST_ASSET_ETCD)" TEST_ASSET_KUBE_APISERVER="$(TEST_ASSET_KUBE_APISERVER)" TEST_ASSET_KUBECTL="$(TEST_ASSET_KUBECTL)" \
 	go test -v .
 
