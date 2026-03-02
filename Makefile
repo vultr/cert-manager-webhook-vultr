@@ -5,9 +5,9 @@ IMAGE_NAME := "webhook"
 IMAGE_TAG := "latest"
 
 OUT := $(shell pwd)/_out
-TEST_ASSET_ETCD := $(OUT)/kubebuilder/bin/etcd
-TEST_ASSET_KUBE_APISERVER := $(OUT)/kubebuilder/bin/kube-apiserver
-TEST_ASSET_KUBECTL := $(OUT)/kubebuilder/bin/kubectl
+TEST_ASSET_ETCD := $(OUT)/controller-tools/envtest/etcd
+TEST_ASSET_KUBE_APISERVER := $(OUT)/controller-tools/envtest/kube-apiserver
+TEST_ASSET_KUBECTL := $(OUT)/controller-tools/envtest/kubectl
 
 $(shell mkdir -p "$(OUT)")
 
