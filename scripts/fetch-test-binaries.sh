@@ -14,7 +14,7 @@ else
   exit 1
 fi
 
-root=$(cd "`dirname $0`"/..; pwd)
+root=$(cd "$(dirname "$0")"/..; pwd)
 output_dir="$root"/_out
 archive_name="envtest-$k8s_version-$os-$arch.tar.gz"
 archive_file="$output_dir/$archive_name"
