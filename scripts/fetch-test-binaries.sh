@@ -16,9 +16,9 @@ fi
 
 root=$(cd "`dirname $0`"/..; pwd)
 output_dir="$root"/_out
-archive_name="kubebuilder-tools-$k8s_version-$os-$arch.tar.gz"
+archive_name="envtest-$k8s_version-$os-$arch.tar.gz"
 archive_file="$output_dir/$archive_name"
-archive_url="https://storage.googleapis.com/kubebuilder-tools/$archive_name"
+archive_url="https://github.com/kubernetes-sigs/controller-tools/releases/download/envtest-$k8s_version/$archive_name"
 
 mkdir -p "$output_dir"
 curl -sL "$archive_url" -o "$archive_file"
