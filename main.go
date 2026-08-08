@@ -25,7 +25,7 @@ import (
 // GroupName ...
 var GroupName = os.Getenv("GROUP_NAME")
 
-const version = "v0.3.1"
+const version = "v0.4.0"
 
 func main() {
 	if GroupName == "" {
@@ -50,6 +50,18 @@ type VultrSolver struct {
 // solving a DNS01 challenge.
 type VultrProviderConfig struct {
 	APIKeySecretRef cmMeta.SecretKeySelector `json:"apiKeySecretRef"`
+	// TTL is the TTL in seconds for the challenge TXT record.
+	// If unset or less than or equal to zero, a default of 60 is used.
+	TTL *int `json:"ttl,omitempty"`
+}
+
+const defaultTTL = 60
+
+func (c VultrProviderConfig) ttl() int {
+	if c.TTL == nil || *c.TTL <= 0 {
+		return defaultTTL
+	}
+	return *c.TTL
 }
 
 // Name is used as the name for this DNS solver when referencing it on the ACME
@@ -95,7 +107,7 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		Name: v.stripZone(ch.ResolvedFQDN, zoneName),
 		Type: "TXT",
 		Data: ch.Key,
-		TTL:  60,
+		TTL:  cfg.ttl(),
 	}
 
 	_, _, err = v.vultrClient.DomainRecord.Create(ctx, util.UnFqdn(zoneName), req)

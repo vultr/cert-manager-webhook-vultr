@@ -61,6 +61,9 @@ spec:
             apiKeySecretRef:
               key: apiKey
               name: vultr-credentials
+            # Optional. TTL in seconds for the ACME challenge TXT record.
+            # Defaults to 60 when omitted.
+            # ttl: 120
 ```
 
 We also need to grant permissions for the `service account` to be able to grab the secret .
