@@ -1,6 +1,4 @@
-FROM ewr.vultrce.com/dhi.io/golang:1.27-alpine AS build_deps
-
-RUN apk add --no-cache git
+FROM ewr.vultrcr.com/dhi.io/golang:1.27-alpine AS build_deps
 
 WORKDIR /workspace
 
@@ -13,12 +11,10 @@ FROM build_deps AS build
 
 COPY . .
 
-RUN CGO_ENABLED=0 go build -trimpath -o webhook -ldflags '-w -extldflags "-static"' .
+RUN CGO_ENABLED=0 go build -trimpath -o /tmp/webhook -ldflags '-w -extldflags "-static"' .
 
-FROM ewr.vultrce.com/dhi.io/alpine:3.15
+FROM ewr.vultrcr.com/dhi.io/static:20230311
 
-RUN apk add --no-cache ca-certificates
-
-COPY --from=build /workspace/webhook /usr/local/bin/webhook
+COPY --from=build /tmp/webhook /usr/local/bin/webhook
 
 ENTRYPOINT ["webhook"]

@@ -51,16 +51,15 @@ changelog:
       - '^testdata:'
       - '^deploy:'
 
-dockers_v2:
+dockers:
   - dockerfile: Dockerfile.goreleaser
-    images:
-      - vultr/cert-manager-webhook-vultr
-    tags:
-      - release
-      - "{{ .Tag }}"
-    platforms:
-      - linux/amd64
-      - linux/arm64
+    ids:
+      - default
+    goos: linux
+    goarch: amd64
+    image_templates:
+      - "vultr/cert-manager-webhook-vultr:release"
+      - "vultr/cert-manager-webhook-vultr:{{ .Tag }}"
 
 
 release:

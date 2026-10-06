@@ -25,7 +25,7 @@ import (
 // GroupName ...
 var GroupName = os.Getenv("GROUP_NAME")
 
-const version = "v0.4.1"
+const version = "v0.4.2"
 
 func main() {
 	if GroupName == "" {
