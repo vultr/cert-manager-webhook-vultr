@@ -4,7 +4,7 @@ This is a webhook solver for [Vultr](https://www.vultr.com) to be used with [Cer
 
 ## Supported cert-manager features
 
-This provider implements cert-manager's external ACME DNS-01 webhook solver. It can create and remove the TXT records cert-manager requests in Vultr-managed DNS zones. This supports regular and wildcard certificates, and can be used from either an `Issuer` or `ClusterIssuer`. Each solver configuration can reference its own Vultr API key Secret.
+This provider implements cert-manager's external ACME DNS-01 webhook solver. It can create and remove the TXT records cert-manager requests in Vultr-managed DNS zones. This supports regular and wildcard certificates, and can be used from either an `Issuer` or `ClusterIssuer`. Each solver configuration can reference its own Vultr API key Secret.  
 
 The webhook does not implement HTTP-01, TLS-ALPN-01, certificate issuers, ACME account management, certificate renewal, or certificate storage; those are cert-manager responsibilities and are configured on cert-manager issuers and `Certificate` resources. DNS-01 solver selection (such as `selector.dnsZones`, `selector.dnsNames`, and `selector.matchLabels`) is also configured on the issuer and handled by cert-manager. The Vultr API key must be able to manage DNS records for the selected zone.
 
