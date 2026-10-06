@@ -1,5 +1,6 @@
 FROM ewr.vultrce.com/dhi.io/alpine:3.15
 
 RUN apk add --no-cache ca-certificates
-COPY cert-manager-webhook-vultr .
+ARG TARGETPLATFORM
+COPY ${TARGETPLATFORM}/cert-manager-webhook-vultr .
 ENTRYPOINT ["./cert-manager-webhook-vultr"]
