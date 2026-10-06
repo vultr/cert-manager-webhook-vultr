@@ -1,4 +1,7 @@
 # Change Log
+## [v0.4.1](https://github.com/vultr/cert-manager-webhook-vultr) (2026-10-06)
+* Fix the GoReleaser v2 release configuration and Docker image publishing.
+
 ## [v0.4.0](https://github.com/vultr/cert-manager-webhook-vultr) (2026-10-06)
 * Update Go to 1.27 and upgrade dependencies.
 * Use DHI pull-through images for Docker builds.
