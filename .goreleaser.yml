@@ -6,6 +6,7 @@ before:
     - go generate ./...
 builds:
   -
+    id: cert-manager-webhook-vultr
     env:
       - CGO_ENABLED=0
 
@@ -54,7 +55,7 @@ changelog:
 dockers:
   - dockerfile: Dockerfile.goreleaser
     ids:
-      - default
+      - cert-manager-webhook-vultr
     goos: linux
     goarch: amd64
     image_templates:
