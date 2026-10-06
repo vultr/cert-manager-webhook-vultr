@@ -1,4 +1,10 @@
 # Change Log
+## [v0.4.0](https://github.com/vultr/cert-manager-webhook-vultr) (2026-10-06)
+* Update Go to 1.27 and upgrade dependencies.
+* Use DHI pull-through images for Docker builds.
+* Isolate Vultr API clients per challenge and improve DNS zone handling.
+* Document supported cert-manager DNS-01 features and add unit coverage.
+
 ## [v0.3.1](https://github.com/vultr/cert-manager-webhook-vultr) (2022-03-25)
 * Bump k8s.io/client-go from 0.23.1 to 0.23.5  [PR 34](https://github.com/vultr/cert-manager-webhook-vultr/pull/34) 
 * Bump k8s.io/apiextensions-apiserver from 0.23.1 to 0.23.5 [PR 36](https://github.com/vultr/cert-manager-webhook-vultr/pull/36) 

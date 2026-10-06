@@ -25,7 +25,7 @@ import (
 // GroupName ...
 var GroupName = os.Getenv("GROUP_NAME")
 
-const version = "v0.3.1"
+const version = "v0.4.0"
 
 func main() {
 	if GroupName == "" {
@@ -42,8 +42,7 @@ func main() {
 // VultrSolver implements the provider-specific logic needed to
 // 'present' an ACME challenge TXT record for your own DNS provider.
 type VultrSolver struct {
-	k8Client    *kubernetes.Clientset
-	vultrClient *govultr.Client
+	k8Client *kubernetes.Clientset
 }
 
 // VultrProviderConfig is a structure that is used to decode into when
@@ -69,10 +68,9 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	if v.vultrClient == nil {
-		if err := v.setVultrClient(ch, cfg); err != nil {
-			return err
-		}
+	vultrClient, err := v.newVultrClient(ctx, ch, cfg)
+	if err != nil {
+		return err
 	}
 
 	zoneName, err := util.FindZoneByFqdn(ctx, ch.ResolvedFQDN, util.RecursiveNameservers)
@@ -80,7 +78,7 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	records, err := v.getRecords(ctx, ch)
+	records, err := v.getRecords(ctx, ch, zoneName, vultrClient)
 	if err != nil {
 		return err
 	}
@@ -91,14 +89,14 @@ func (v *VultrSolver) Present(ch *v1alpha1.ChallengeRequest) error {
 		}
 	}
 
-	req := &govultr.DomainRecordReq{
+	req := &govultr.DomainRecordCreateReq{
 		Name: v.stripZone(ch.ResolvedFQDN, zoneName),
 		Type: "TXT",
 		Data: ch.Key,
 		TTL:  60,
 	}
 
-	_, _, err = v.vultrClient.DomainRecord.Create(ctx, util.UnFqdn(zoneName), req)
+	_, _, err = vultrClient.DomainRecord.Create(ctx, util.UnFqdn(zoneName), req)
 	if err != nil {
 		return err
 	}
@@ -116,10 +114,9 @@ func (v *VultrSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	if v.vultrClient == nil {
-		if err := v.setVultrClient(ch, cfg); err != nil {
-			return err
-		}
+	vultrClient, err := v.newVultrClient(ctx, ch, cfg)
+	if err != nil {
+		return err
 	}
 
 	zoneName, err := util.FindZoneByFqdn(ctx, ch.ResolvedFQDN, util.RecursiveNameservers)
@@ -127,14 +124,14 @@ func (v *VultrSolver) CleanUp(ch *v1alpha1.ChallengeRequest) error {
 		return err
 	}
 
-	records, err := v.getRecords(ctx, ch)
+	records, err := v.getRecords(ctx, ch, zoneName, vultrClient)
 	if err != nil {
 		return err
 	}
 
 	for _, record := range records {
 		if record.Type == "TXT" && record.Data == fmt.Sprintf("\"%s\"", ch.Key) {
-			if err := v.vultrClient.DomainRecord.Delete(ctx, util.UnFqdn(zoneName), record.ID); err != nil {
+			if err := vultrClient.DomainRecord.Delete(ctx, util.UnFqdn(zoneName), record.ID); err != nil {
 				return err
 			}
 		}
@@ -167,45 +164,39 @@ func loadConfig(cfgJSON *extapi.JSON) (VultrProviderConfig, error) {
 	return cfg, nil
 }
 
-func (v *VultrSolver) setVultrClient(ch *v1alpha1.ChallengeRequest, cfg VultrProviderConfig) error {
+func (v *VultrSolver) newVultrClient(ctx context.Context, ch *v1alpha1.ChallengeRequest, cfg VultrProviderConfig) (*govultr.Client, error) {
 	ref := cfg.APIKeySecretRef
 	if ref.Name == "" || ref.Key == "" {
-		return fmt.Errorf("key not set in secret : %s", ref.Name)
+		return nil, fmt.Errorf("apiKeySecretRef.name and apiKeySecretRef.key must both be set")
 	}
 
-	secret, err := v.k8Client.CoreV1().Secrets(ch.ResourceNamespace).Get(context.Background(), ref.Name, k8Meta.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	keyBytes, ok := secret.Data[ref.Key]
-	if !ok {
-		return fmt.Errorf("no key %s in secret : %s", ref.Key, ref.Name)
-	}
-
-	config := &oauth2.Config{}
-	ctx := context.Background()
-	ts := config.TokenSource(ctx, &oauth2.Token{AccessToken: string(keyBytes)})
-	v.vultrClient = govultr.NewClient(oauth2.NewClient(ctx, ts))
-	v.vultrClient.SetUserAgent(fmt.Sprintf("cert-manager-webhook-vultr/%s", version))
-
-	return nil
-}
-
-func (v *VultrSolver) getRecords(ctx context.Context, ch *v1alpha1.ChallengeRequest) ([]govultr.DomainRecord, error) {
-	zone, err := util.FindZoneByFqdn(context.Background(), ch.ResolvedFQDN, util.RecursiveNameservers)
+	secret, err := v.k8Client.CoreV1().Secrets(ch.ResourceNamespace).Get(ctx, ref.Name, k8Meta.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	test := util.UnFqdn(zone)
-	log.Printf("[DEBUG] Looking up records for domain: %s", test)
+	keyBytes, ok := secret.Data[ref.Key]
+	if !ok {
+		return nil, fmt.Errorf("no key %s in secret %s", ref.Key, ref.Name)
+	}
+
+	config := &oauth2.Config{}
+	ts := config.TokenSource(ctx, &oauth2.Token{AccessToken: string(keyBytes)})
+	vultrClient := govultr.NewClient(oauth2.NewClient(ctx, ts))
+	vultrClient.SetUserAgent(fmt.Sprintf("cert-manager-webhook-vultr/%s", version))
+
+	return vultrClient, nil
+}
+
+func (v *VultrSolver) getRecords(ctx context.Context, ch *v1alpha1.ChallengeRequest, zone string, vultrClient *govultr.Client) ([]govultr.DomainRecord, error) {
+	domain := util.UnFqdn(zone)
+	log.Printf("[DEBUG] Looking up records for domain: %s", domain)
 
 	var records []govultr.DomainRecord
 	targetName := v.stripZone(ch.ResolvedFQDN, zone)
 	listOptions := &govultr.ListOptions{PerPage: 100}
 	for {
-		recordsList, meta, _, err := v.vultrClient.DomainRecord.List(ctx, test, listOptions)
+		recordsList, meta, _, err := vultrClient.DomainRecord.List(ctx, domain, listOptions)
 		if err != nil {
 			return nil, err
 		}
@@ -222,13 +213,17 @@ func (v *VultrSolver) getRecords(ctx context.Context, ch *v1alpha1.ChallengeRequ
 		listOptions.Cursor = meta.Links.Next
 	}
 
-	return records, err
+	return records, nil
 }
 
 func (v *VultrSolver) stripZone(resolvedFQDN, zone string) string {
-	targetName := resolvedFQDN
-	if strings.HasSuffix(resolvedFQDN, zone) {
-		targetName = resolvedFQDN[:len(resolvedFQDN)-len(zone)-1]
+	fqdn := util.UnFqdn(resolvedFQDN)
+	zone = util.UnFqdn(zone)
+	if fqdn == zone {
+		return ""
 	}
-	return targetName
+	if strings.HasSuffix(fqdn, "."+zone) {
+		return strings.TrimSuffix(fqdn, "."+zone)
+	}
+	return fqdn
 }

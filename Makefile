@@ -13,7 +13,7 @@ $(shell mkdir -p "$(OUT)")
 
 test: _test/kubebuilder
 	TEST_ASSET_ETCD="$(TEST_ASSET_ETCD)" TEST_ASSET_KUBE_APISERVER="$(TEST_ASSET_KUBE_APISERVER)" TEST_ASSET_KUBECTL="$(TEST_ASSET_KUBECTL)" \
-	go test -v .
+	go test -tags=integration -v .
 
 _test/kubebuilder:
 	bash scripts/fetch-test-binaries.sh

@@ -1,4 +1,4 @@
-FROM golang:1.25-alpine AS build_deps
+FROM ewr.vultrce.com/dhi.io/golang:1.27-alpine AS build_deps
 
 RUN apk add --no-cache git
 
@@ -15,7 +15,7 @@ COPY . .
 
 RUN CGO_ENABLED=0 go build -trimpath -o webhook -ldflags '-w -extldflags "-static"' .
 
-FROM alpine:3.15
+FROM ewr.vultrce.com/dhi.io/alpine:3.15
 
 RUN apk add --no-cache ca-certificates
 

@@ -1,25 +1,27 @@
 package main
 
 import (
-	"os"
 	"testing"
-	"time"
-
-	dns "github.com/cert-manager/cert-manager/test/acme"
 )
 
-var (
-	zone = os.Getenv("TEST_ZONE_NAME")
-)
+func TestStripZone(t *testing.T) {
+	tests := []struct {
+		name string
+		fqdn string
+		zone string
+		want string
+	}{
+		{name: "challenge below zone", fqdn: "_acme-challenge.example.com.", zone: "example.com.", want: "_acme-challenge"},
+		{name: "nested challenge below zone", fqdn: "_acme-challenge.foo.example.com.", zone: "example.com.", want: "_acme-challenge.foo"},
+		{name: "zone suffix is label bounded", fqdn: "_acme-challenge.notexample.com.", zone: "example.com.", want: "_acme-challenge.notexample.com"},
+	}
 
-func TestRunsSuite(t *testing.T) {
-	fixture := dns.NewFixture(&VultrSolver{},
-		dns.SetResolvedZone(zone),
-		dns.SetAllowAmbientCredentials(false),
-		dns.SetManifestPath("testdata/vultr"),
-		dns.SetDNSName(zone),
-		dns.SetDNSServer("ns1.vultr.com:53"),
-		dns.SetPropagationLimit(time.Minute*20),
-	)
-	fixture.RunConformance(t)
+	solver := &VultrSolver{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := solver.stripZone(tt.fqdn, tt.zone); got != tt.want {
+				t.Fatalf("stripZone(%q, %q) = %q, want %q", tt.fqdn, tt.zone, got, tt.want)
+			}
+		})
+	}
 }
