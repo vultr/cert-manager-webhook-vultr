@@ -13,13 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       msg_check: ${{ steps.check-msg.outputs.match }}
+      release_tag: ${{ steps.check-msg.outputs.release_tag }}
     steps:
       - name: Check Message
         id: check-msg
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
-          pattern="^Release v[0-9]+.[0-9]+.[0-9]+ #(minor|major|patch)$"
-          if [[ "${{ github.event.head_commit.message }}" =~ ${pattern} ]]; then
-              echo ::set-output name=match::true
+          pattern='^Release (v[0-9]+\.[0-9]+\.[0-9]+) #(minor|major|patch)$'
+          if [[ "${COMMIT_MESSAGE}" =~ ${pattern} ]]; then
+              echo "match=true" >> "$GITHUB_OUTPUT"
+              echo "release_tag=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           fi
   create-tag:
     runs-on: ubuntu-latest
@@ -39,6 +43,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         WITH_V: true
         DEFAULT_BUMP: "none"
+        CUSTOM_TAG: ${{ needs.check-commit.outputs.release_tag }}
 
   goreleaser:
     runs-on: ubuntu-latest
