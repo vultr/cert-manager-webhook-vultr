@@ -1,6 +1,7 @@
 # Change Log
 ## [v0.4.2](https://github.com/vultr/cert-manager-webhook-vultr) (2026-10-06)
 * Correct the DHI pull-through registry hostname.
+* Honor the release version from the release commit when creating the tag.
 
 ## [v0.4.1](https://github.com/vultr/cert-manager-webhook-vultr) (2026-10-06)
 * Fix the GoReleaser v2 release configuration and Docker image publishing.
